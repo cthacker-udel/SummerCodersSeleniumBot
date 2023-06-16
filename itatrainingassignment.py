@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Callable, List, Optional, Tuple, Union
 
 
-class ITATrainingAutomatorDriverEnum(Enum):
+class SeleniumBotWebdriverType(Enum):
     """
     Controls what type of driver we are setting out webdriver to
     """
@@ -38,7 +38,7 @@ def find_webdriver(headless: bool):
 
     def get_driver(service: Callable[[str], Optional[Union[
         ChromeService, ChromiumService, EdgeService, FirefoxService, IEService]]],
-                   spec: ITATrainingAutomatorDriverEnum) -> WebDriver:
+                   spec: SeleniumBotWebdriverType) -> WebDriver:
         """
         Gets the  driver specified by the specification `spec` passed in. Fetches the driver using the helpful
         library `webdriver_manager`, which handles downloading the driver to be used, dependent on the specification
@@ -51,48 +51,54 @@ def find_webdriver(headless: bool):
         :return: The instantiated webdriver instance
         """
         from selenium import webdriver
-        if spec == ITATrainingAutomatorDriverEnum.CHROME:
+        if spec == SeleniumBotWebdriverType.CHROME:
             from webdriver_manager.chrome import ChromeDriverManager
             from selenium.webdriver.chrome.options import Options
             options = Options()
-            options.headless = headless
+            if headless:
+                options.add_argument('--headless')
             return webdriver.Chrome(service=service(ChromeDriverManager().install()), options=options)
-        elif spec == ITATrainingAutomatorDriverEnum.CHROMIUM:
+        elif spec == SeleniumBotWebdriverType.CHROMIUM:
             from selenium.webdriver.chrome.options import Options
             options = Options()
-            options.headless = headless
+            if headless:
+                options.add_argument('--headless')
             from webdriver_manager.chrome import ChromeDriverManager
             from webdriver_manager.core.utils import ChromeType
             return webdriver.Chrome(service=service(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()),
                                     options=options)
-        elif spec == ITATrainingAutomatorDriverEnum.BRAVE:
+        elif spec == SeleniumBotWebdriverType.BRAVE:
             from selenium.webdriver.chrome.options import Options
             options = Options()
-            options.headless = headless
+            if headless:
+                options.add_argument('--headless')
             from webdriver_manager.chrome import ChromeDriverManager
             from webdriver_manager.core.utils import ChromeType
             return webdriver.Chrome(service=service(ChromeDriverManager(chrome_type=ChromeType.BRAVE).install()),
                                     options=options)
-        elif spec == ITATrainingAutomatorDriverEnum.EDGE:
+        elif spec == SeleniumBotWebdriverType.EDGE:
             from selenium.webdriver.edge.options import Options
             options = Options()
-            options.headless = headless
+            if headless:
+                options.add_argument('--headless')
             from webdriver_manager.microsoft import EdgeChromiumDriverManager
             return webdriver.Edge(service=service(EdgeChromiumDriverManager().install()), options=options)
-        elif spec == ITATrainingAutomatorDriverEnum.INTERNET_EXPLORER:
+        elif spec == SeleniumBotWebdriverType.INTERNET_EXPLORER:
             from selenium.webdriver.ie.options import Options
             options = Options()
-            options.headless = headless
+            if headless:
+                options.add_argument('--headless')
             from webdriver_manager.microsoft import IEDriverManager
             return webdriver.Ie(service=service(IEDriverManager().install()), options=options)
-        elif spec == ITATrainingAutomatorDriverEnum.OPERA:
+        elif spec == SeleniumBotWebdriverType.OPERA:
             from webdriver_manager.opera import OperaDriverManager
             from selenium.webdriver.chrome import service
             webdriver_service = service.Service(OperaDriverManager().install())
             webdriver_service.start()
             options = webdriver.ChromeOptions()
             options.add_experimental_option('w3c', True)
-            options.headless = headless
+            if headless:
+                options.add_argument('--headless')
             return webdriver.Remote(webdriver_service.service_url, options=options)
 
     def try_drivers() -> WebDriver:
@@ -103,15 +109,15 @@ def find_webdriver(headless: bool):
 
         :return: The instantiated webdriver found on the client's computer
         """
-        specs: List[Tuple[ITATrainingAutomatorDriverEnum, Callable[[str], Union[
+        specs: List[Tuple[SeleniumBotWebdriverType, Callable[[str], Union[
             ChromeService, ChromiumService, EdgeService, FirefoxService, IEService]]]] = [
-            (ITATrainingAutomatorDriverEnum.BRAVE, ChromeService),
-            (ITATrainingAutomatorDriverEnum.CHROME, ChromeService),
-            (ITATrainingAutomatorDriverEnum.CHROMIUM, ChromiumService),
-            (ITATrainingAutomatorDriverEnum.EDGE, EdgeService),
-            (ITATrainingAutomatorDriverEnum.FIREFOX, FirefoxService),
-            (ITATrainingAutomatorDriverEnum.INTERNET_EXPLORER, IEService),
-            (ITATrainingAutomatorDriverEnum.OPERA, None)]
+            (SeleniumBotWebdriverType.BRAVE, ChromeService),
+            (SeleniumBotWebdriverType.CHROME, ChromeService),
+            (SeleniumBotWebdriverType.CHROMIUM, ChromiumService),
+            (SeleniumBotWebdriverType.EDGE, EdgeService),
+            (SeleniumBotWebdriverType.FIREFOX, FirefoxService),
+            (SeleniumBotWebdriverType.INTERNET_EXPLORER, IEService),
+            (SeleniumBotWebdriverType.OPERA, None)]
         for each_spec in specs:
             try:
                 selected_driver = each_spec[1]
@@ -124,7 +130,7 @@ def find_webdriver(headless: bool):
     return try_drivers()
 
 
-class ITATrainingAutomator:
+class SeleniumBot:
     """
         ITA Training automator. Accesses the url specified below. Has options for all actions allowed, can even
         override the internal url if need be.
@@ -132,14 +138,45 @@ class ITATrainingAutomator:
     """
 
     def __init__(self,
-                 url: str = 'https://docs.google.com/a/udel.edu/forms/d/e'
-                            '/1FAIpQLSeCnzQ7Kax9u6_uZQDbHiJrPP76iMUg3eJvZMmV3f2xZU8vsQ/viewform',
                  headless: bool = False, timeout: float = 60_000.0) -> None:
-        self.url = url  # The url to use when instantiating the webdriver
-        self.headless = headless  # Whether to start the webdriver in headless mode
+        """
+        Initializes an instance of the ITATraining Automator class
+
+        :param headless: Whether to instantiate the automator in headless mode
+        :param timeout: The page load timeout, waits x amount of seconds for page to load, or automatically closes
+        """
         from selenium.webdriver.remote.webdriver import WebDriver
-        self.driver: WebDriver = find_webdriver()
+        self.driver: WebDriver = find_webdriver(headless)
         self.driver.set_page_load_timeout(timeout)
+        from urllib.parse import urlsplit, SplitResult
+        self.base_url: SplitResult = urlsplit(self.driver.current_url)
+
+    def navigate(self, url: str) -> bool:
+        """
+        Navigates to the URL specified in the argument to the method
+
+        :param url: The url to navigate to
+        :return: Whether it was navigated to successfully
+        """
+        try:
+            self.driver.get(url)
+            from urllib.parse import urlsplit
+            self.base_url = urlsplit(self.driver.current_url)
+            return True
+        except Exception as exception:
+            print(str(exception))
+            return False
+
+
+    def log_in(self, email_or_phone: str, password: str) -> None:
+        """
+        Logs the user into google services using their email or phone, and their password
+
+        :param email_or_phone: The email or phone number used to sign in
+        :param password: The password used to sign in
+        :return: Whether the login was successful or not
+        """
+        email_or_
 
 
 if __name__ == '__main__':
@@ -156,4 +193,8 @@ if __name__ == '__main__':
     except ImportError:
         pipmain(['install', 'webdriver-manager'])
 
-    print(find_webdriver())
+    selenium_bot = SeleniumBot()
+    selenium_bot.navigate(
+        'https://docs.google.com/forms/d/e/1FAIpQLSeCnzQ7Kax9u6_uZQDbHiJrPP76iMUg3eJvZMmV3f2xZU8vsQ/viewform')
+    if selenium_bot.base_url.netloc == 'accounts.google.com':
+        ## Logging in
