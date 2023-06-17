@@ -22,6 +22,17 @@ class SeleniumBotWebdriverType(Enum):
     OPERA = 6
 
 
+class GoogleFormBotFieldType(Enum):
+    """
+    Represents the different types of inputs present within the Google form
+    """
+    DATE = 0,
+    MULTI_CHECKBOX = 1,
+    MULTI_SELECT = 2,
+    SINGLE_CHECKBOX = 3,
+    TEXT = 4,
+
+
 def find_webdriver(headless: bool) -> Any:
     """
     Finds the webdriver, which will be used for automation purposes
@@ -456,7 +467,7 @@ class GoogleFormBot(SeleniumBot):
 
     def enter_text_in_text_input(self, label: str, content: Optional[str] = None) -> None:
         """
-        Enters text into the text input in the google form
+        Enters text into the text input in the Google form
 
         :param label: The label to find the text input by
         :param content: The content to input into the form
@@ -465,7 +476,7 @@ class GoogleFormBot(SeleniumBot):
         found_input = self.get_input_by_label(label)
         simulate_typing(found_input, generate_random_string() if content is None else content)
 
-    def check_singular_textbox(self, label: str, checked: bool) -> None:
+    def check_singular_textbox(self, label: str, checked: bool = True) -> None:
         """
         Checks a singular textbox in the Google form
 
@@ -591,6 +602,65 @@ class ITATrainingBot(GoogleFormBot):
         Just calls the super class, which instantiates the bot
         """
         super().__init__()
+        # [Type of input, value, label]
+        self.fields: List[List[GoogleFormBotFieldType, str | int | bool | List[str] | None, str]] = [
+            [GoogleFormBotFieldType.SINGLE_CHECKBOX, True, "email"],
+            [GoogleFormBotFieldType.TEXT, "Thacker", "Last Name"],
+            [GoogleFormBotFieldType.TEXT, "Cameron", "First Name"],
+            [GoogleFormBotFieldType.TEXT, "Z", "Middle Initial"],
+            [GoogleFormBotFieldType.TEXT, 312931, "Student ID #"],
+            [GoogleFormBotFieldType.MULTI_SELECT, None, "Country of Citizenship"],
+            [GoogleFormBotFieldType.MULTI_SELECT, None, "Term for ELI ITA Attendance"],
+            [GoogleFormBotFieldType.MULTI_SELECT, None, "ELI ITA Session"],
+            [GoogleFormBotFieldType.TEXT, 99, "IBT TOEFL Score (Speaking)"],
+            [GoogleFormBotFieldType.TEXT, 99, "IBT TOEFL Score (Total)"],
+            [GoogleFormBotFieldType.DATE, [12, 20, 1990], "Begin Date of TA Contract"],
+            [GoogleFormBotFieldType.DATE, [12, 20, 1991], "End Date of TA Contract"],
+            [GoogleFormBotFieldType.TEXT, 20000, "Amount of Stipend"],
+            [GoogleFormBotFieldType.TEXT, 100, "Percentage of Tuition"],
+            [GoogleFormBotFieldType.MULTI_CHECKBOX, None, "Name of Student's Program"],
+            [GoogleFormBotFieldType.TEXT, "Thacker Department", "Department Contact Name"],
+            [GoogleFormBotFieldType.TEXT, "20 Thacker Lane", "Department Contact Campus Address"],
+            [GoogleFormBotFieldType.TEXT, "123-401-9958", "Department Contact Person's Telephone Number"]
+        ]
+
+        ## lookup table of labels, to indexes within the fields, if the user wants to mutate any of the values
+        self.lookup: dict[str, int] = {}
+
+        for ind, element in enumerate(self.fields):
+            self.lookup[element[-1]] = ind
+
+    def change_field(self, field_label: str, value: str | int | bool | List[str]) -> ITATrainingBot:
+        """
+        Mutates the field value within the training bot
+
+        :param field_label: The label to mutate
+        :param value: The value to update the field with
+        :return: The mutated class instance
+        """
+        if field_label in self.lookup:
+            self.fields[self.lookup[field_label]] = value
+        return self
+
+    def process_fields(self) -> None:
+        """
+        Processes all the internal `fields` array, which contains commands the bot processes
+
+        :return: None, processes the fields array internally
+        """
+        for each_field in self.fields:
+            [field_type, value, label] = each_field
+            if field_type == GoogleFormBotFieldType.TEXT:
+                self.enter_text_in_text_input(label, value)
+            elif field_type == GoogleFormBotFieldType.MULTI_CHECKBOX:
+                self.select_multiple_checkboxes(label)
+            elif field_type == GoogleFormBotFieldType.MULTI_SELECT:
+                self.select_multiselect_option(label)
+            elif field_type == GoogleFormBotFieldType.SINGLE_CHECKBOX:
+                self.check_singular_textbox(label, value)
+            elif field_type == GoogleFormBotFieldType.DATE:
+                [month, day, year] = value
+                self.enter_date(label, month, day, year)
 
 
 if __name__ == '__main__':
