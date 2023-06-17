@@ -22,7 +22,7 @@ class SeleniumBotWebdriverType(Enum):
     OPERA = 6
 
 
-def find_webdriver(headless: bool):
+def find_webdriver(headless: bool) -> Any:
     """
     Finds the webdriver, which will be used for automation purposes
 
@@ -166,13 +166,11 @@ def simulate_typing(element: Any, content: str, random_interval_start=.15, rando
 
 class SeleniumBot:
     """
-        ITA Training automator. Accesses the url specified below. Has options for all actions allowed, can even
-        override the internal url if need be.
-        https://docs.google.com/a/udel.edu/forms/d/e/1FAIpQLSeCnzQ7Kax9u6_uZQDbHiJrPP76iMUg3eJvZMmV3f2xZU8vsQ/viewform
+        Selenium bot, capable of logging into google accounts as well as logging into University of Delaware accounts.
     """
 
     def __init__(self,
-                 headless: bool = False, timeout: float = 60_000.0) -> None:
+                 headless: bool = False, timeout: float = 60000.0) -> None:
         """
         Initializes an instance of the ITATraining Automator class
 
@@ -353,6 +351,17 @@ class SeleniumBot:
         self.enter_otp_udel_account(otp_code)
 
 
+class ITATrainingBot(SeleniumBot):
+    """
+        ITA Training automator. Accesses the url specified below. Has options for all actions allowed, can even
+        override the internal url if need be.
+        https://docs.google.com/a/udel.edu/forms/d/e/1FAIpQLSeCnzQ7Kax9u6_uZQDbHiJrPP76iMUg3eJvZMmV3f2xZU8vsQ/viewform
+    """
+
+    def __init__(self):
+        super().__init__()
+
+
 if __name__ == '__main__':
     try:
         from pip import main as pipmain
@@ -371,24 +380,24 @@ if __name__ == '__main__':
     except ImportError:
         pipmain(['install', 'pyotp'])
 
-    selenium_bot = SeleniumBot()
-    selenium_bot.navigate(
+    ita_bot = ITATrainingBot()
+    ita_bot.navigate(
         'https://docs.google.com/forms/d/e/1FAIpQLSeCnzQ7Kax9u6_uZQDbHiJrPP76iMUg3eJvZMmV3f2xZU8vsQ/viewform')
     import re
 
     google_email = ''
     while len(google_email) == 0 or not re.match(r'[^@]+@[^@]+\.[^@]+', google_email):
         google_email = input("Enter google email address >\t")
-    selenium_bot.enter_email_google_account(google_email)
-    if selenium_bot.base_url.netloc == 'accounts.google.com':
+    ita_bot.enter_email_google_account(google_email)
+    if ita_bot.base_url.netloc == 'accounts.google.com':
         #########################
         ## GOOGLE AUTHENTICATION
         #########################
         google_password = ''
         while len(google_password) == 0:
             google_password = input("Enter google account password >\t")
-        selenium_bot.log_in_google_account(google_email, google_password)
-    elif selenium_bot.base_url.netloc == 'cas.nss.udel.edu':
+        ita_bot.log_in_google_account(google_email, google_password)
+    elif ita_bot.base_url.netloc == 'cas.nss.udel.edu':
         ########################
         ## UDEL AUTHENTICATION
         ########################
@@ -401,3 +410,4 @@ if __name__ == '__main__':
         otp_secret = ''
         while len(otp_secret) == 0:
             otp_secret = input("Enter your OTP secret >\t")
+        ita_bot.log_in_udel_account(udel_username, udel_password, otp_secret)
