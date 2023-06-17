@@ -143,7 +143,7 @@ def press_enter_key(element: Any) -> None:
     converted_element.send_keys(Keys.ENTER)
 
 
-def simulate_typing(element: Any, content: str, random_interval_start=.15, random_interval_stop=1) -> None:
+def simulate_typing(element: Any, content: str | int, random_interval_start=.15, random_interval_stop=1) -> None:
     """
     Simulates typing into the element passed into the function. Types in a random interval, letter by letter,
     in the interval **[random_interval_start, random_interval_stop)**
@@ -159,7 +159,9 @@ def simulate_typing(element: Any, content: str, random_interval_start=.15, rando
     from random import uniform
 
     converted_element: WebElement = element
-    for each_letter in content:
+
+    converted_content = content if isinstance(content, str) else str(content)
+    for each_letter in converted_content:
         converted_element.send_keys(each_letter)
         sleep(uniform(random_interval_start, random_interval_stop))
 
@@ -351,7 +353,39 @@ class SeleniumBot:
         self.enter_otp_udel_account(otp_code)
 
 
-class ITATrainingBot(SeleniumBot):
+def select_random_multiselect_option(mutliselect_element: Any) -> None:
+    """
+    Selects a random element from the mutliselect options
+
+    :param mutliselect_element: The multiselect element
+    :return: None, mutates the dom internally
+    """
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.remote.webdriver import WebElement
+    from random import choice
+    converted_multiselect: WebElement = mutliselect_element
+    all_divs: List[WebElement] = converted_multiselect.find_elements(by=By.TAG_NAME, value='div')
+    all_options: List[WebElement] = list(
+        filter(lambda x: x.get_attribute('role') == 'option' and x.get_attribute('data-value') is not None,
+               all_divs))
+    if len(all_options) > 0:
+        random_option: WebElement = choice(all_options)
+        random_option.click()
+
+
+def generate_random_string(length: int = 20) -> str:
+    """
+    Generates a random string from the ascii_lowercase constant within the string module
+
+    :param length: The length of the randomized string
+    :return: The randomized string
+    """
+    from random import choices
+    from string import ascii_lowercase
+    return ''.join(choices(ascii_lowercase, k=length))
+
+
+class GoogleFormBot(SeleniumBot):
     """
         ITA Training automator. Accesses the url specified below. Has options for all actions allowed, can even
         override the internal url if need be.
@@ -359,6 +393,203 @@ class ITATrainingBot(SeleniumBot):
     """
 
     def __init__(self):
+        """
+        Just calls the super class, class will contain methods relating specifically to the ITA training google form
+        """
+        super().__init__()
+
+    def get_input_by_label(self, label: str) -> Any:
+        """
+        Gets an input from the label
+
+        :param label: The label to find the input element by
+        :return: The found input element
+        """
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.remote.webdriver import WebElement
+        all_divs = self.driver.find_elements(by=By.TAG_NAME, value='span')
+
+        found_elements = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
+            "innerHTML").strip().lower() == label.lower(), all_divs))
+
+        if len(found_elements) > 0:
+            found_element: WebElement = found_elements[-1]
+            fourth_parent = found_element.find_element('../../../../')
+            input_element = fourth_parent.find_element(By.TAG_NAME, value='input')
+            return input_element
+
+        return None
+
+    def get_mutliselect_by_label(self, label: str) -> Any:
+        """
+        Gets an input from the label
+
+        :param label: The label to find the input element by
+        :return: The found input element
+        """
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.remote.webdriver import WebElement
+        all_divs = self.driver.find_elements(by=By.TAG_NAME, value='span')
+
+        found_elements = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
+            "innerHTML").strip().lower() == label.lower(), all_divs))
+
+        if len(found_elements) > 0:
+            found_element: WebElement = found_elements[-1]
+            fourth_parent = found_element.find_element('../../../../')
+            all_divs_of_parent = fourth_parent.find_elements(By.TAG_NAME, value='div')
+            if len(all_divs_of_parent) > 0:
+                multiselect_elements = list(filter(lambda x: x.get_attribute('role') == 'listbox', all_divs_of_parent))
+                if len(multiselect_elements) > 0:
+                    return multiselect_elements[-1]
+        return None
+
+    def select_multiselect_option(self, label: str) -> None:
+        """
+        Selects a mutliselect option at random
+
+        :param label: The label to find the multiselect by
+        :return: None, mutates the dom internally
+        """
+        found_multiselect = self.get_mutliselect_by_label(label)
+        select_random_multiselect_option(found_multiselect)
+
+    def enter_text_in_text_input(self, label: str, content: Optional[str] = None) -> None:
+        """
+        Enters text into the text input in the google form
+
+        :param label: The label to find the text input by
+        :param content: The content to input into the form
+        :return: None, mutates the dom internally
+        """
+        found_input = self.get_input_by_label(label)
+        simulate_typing(found_input, generate_random_string() if content is None else content)
+
+    def check_singular_textbox(self, label: str, checked: bool) -> None:
+        """
+        Checks a singular textbox in the Google form
+
+        :param label: The label to access the checkbox from
+        :param checked: Whether to check the checkbox
+        :return: None, mutates the DOM internally
+        """
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.remote.webdriver import WebElement
+
+        all_spans = self.driver.find_elements(By.TAG_NAME, value='span')
+
+        if len(all_spans) > 0:
+            found_label_span = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
+                "innerHTML").strip().lower() == label.lower(), all_spans))
+            if len(found_label_span) > 0:
+                found_label = found_label_span[-1]
+                third_parent: WebElement = found_label.find_element(By.XPATH, value='../../../')
+                parent_divs = third_parent.find_elements(By.TAG_NAME, value='div')
+                if len(parent_divs) > 0:
+                    found_checkboxes = list(filter(lambda x: x.get_attribute("role") == "checkbox", parent_divs))
+                    if len(found_checkboxes) > 0:
+                        found_checkbox: WebElement = found_checkboxes[-1]
+                        if checked:
+                            found_checkbox.click()
+
+    def enter_date(self, label: str, month: str, day: str, year: str) -> None:
+        """
+        Enters a date into the date input with the corresponding label
+
+        :param label: The label used to access the date input
+        :param month: The month of the date
+        :param day: The day of the date
+        :param year: The year of the date
+        :return: None, mutates the DOM internally
+        """
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.remote.webdriver import WebElement
+
+        all_spans: List[WebElement] = self.driver.find_elements(By.TAG_NAME, value='span')
+
+        if len(all_spans) > 0:
+            found_label_spans = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
+                "innerHTML").strip().lower() == label.lower(), all_spans))
+            if len(found_label_spans) > 0:
+                found_label_span: WebElement = found_label_spans[-1]
+                fourth_parent = found_label_span.find_element(By.XPATH, value='../../../../')
+                fourth_parent_inputs = fourth_parent.find_elements(By.TAG_NAME, value='input')
+                if len(fourth_parent_inputs) > 0:
+                    found_month_inputs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
+                        "aria-label") is not None and x.get_attribute(
+                        "role").strip().lower() == "combobox" and x.get_attribute(
+                        "aria-label").strip().lower() == "month", fourth_parent_inputs))
+                    found_day_inputs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
+                        "aria-label") is not None and x.get_attribute(
+                        "role").strip().lower() == "combobox" and x.get_attribute(
+                        "aria-label").strip().lower() == "day of the month", fourth_parent_inputs))
+                    found_year_inputs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
+                        "aria-label") is not None and x.get_attribute(
+                        "role").strip().lower() == "combobox" and x.get_attribute(
+                        "aria-label").strip().lower() == "year", fourth_parent_inputs))
+                    if len(found_month_inputs) > 0 and len(found_day_inputs) > 0 and len(found_year_inputs) > 0:
+                        found_month_input = found_month_inputs[-1]
+                        found_day_input = found_day_inputs[-1]
+                        found_year_input = found_year_inputs[-1]
+                        simulate_typing(found_month_input, month)
+                        simulate_typing(found_day_input, day)
+                        simulate_typing(found_year_input, year)
+
+    def select_multiple_checkboxes(self, label: str, choose_amount: int = 1, other_text: Optional[str] = None) -> None:
+        """
+        Selects multiple checkboxes from a multi-checkbox input
+
+        :param label: The label to search for the multi-checkbox input
+        :param choose_amount: The number of checkboxes to select
+        :param other_text: The text to input if the `Other` category is present within the checkbox
+        :return: None, mutates the DOM internally
+        """
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.remote.webdriver import WebElement
+        from random import choice
+
+        all_spans: List[WebElement] = self.driver.find_elements(By.TAG_NAME, value='span')
+
+        if len(all_spans) > 0:
+            found_label_spans = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
+                "innerHTML").strip().lower() == label.lower(), all_spans))
+            if len(found_label_spans) > 0:
+                found_label: WebElement = found_label_spans[-1]
+                fourth_parent: WebElement = found_label.find_element(By.XPATH, "../../../../")
+                fourth_parent_divs = fourth_parent.find_elements(By.TAG_NAME, value='div')
+                if len(fourth_parent_divs) > 0:
+                    found_list_divs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
+                        "role").strip().lower() == "list", fourth_parent_divs))
+                    if len(found_list_divs) > 0:
+                        found_list: WebElement = found_list_divs[-1]
+                        found_list_divs = found_list.find_elements(By.TAG_NAME, value='div')
+                        if len(found_list_divs) > 0:
+                            found_list_options: List[WebElement] = list(filter(
+                                lambda x: x.get_attribute("role") is not None and x.get_attribute("role") == "listitem",
+                                found_list_divs))
+                            for i in range(choose_amount):
+                                random_option: WebElement = choice(found_list_options)
+                                random_option.click()
+                                # If we click on the other option.
+                                # It automatically focuses onto the text input to describe the other option
+                                focused_element = self.driver.switch_to.active_element
+                                if focused_element.tag_name == 'input':
+                                    if other_text is None:
+                                        from string import ascii_lowercase
+                                        simulate_typing(focused_element, generate_random_string())
+                                    else:
+                                        simulate_typing(focused_element, other_text)
+
+
+class ITATrainingBot(GoogleFormBot):
+    """
+    Bot specifically designed for the ITA training bot
+    """
+
+    def __init__(self):
+        """
+        Just calls the super class, which instantiates the bot
+        """
         super().__init__()
 
 
@@ -380,7 +611,7 @@ if __name__ == '__main__':
     except ImportError:
         pipmain(['install', 'pyotp'])
 
-    ita_bot = ITATrainingBot()
+    ita_bot = GoogleFormBot()
     ita_bot.navigate(
         'https://docs.google.com/forms/d/e/1FAIpQLSeCnzQ7Kax9u6_uZQDbHiJrPP76iMUg3eJvZMmV3f2xZU8vsQ/viewform')
     import re
