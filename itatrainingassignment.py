@@ -681,7 +681,7 @@ if __name__ == '__main__':
     except ImportError:
         pipmain(['install', 'pyotp'])
 
-    ita_bot = GoogleFormBot()
+    ita_bot = ITATrainingBot()
     ita_bot.navigate(
         'https://docs.google.com/forms/d/e/1FAIpQLSeCnzQ7Kax9u6_uZQDbHiJrPP76iMUg3eJvZMmV3f2xZU8vsQ/viewform')
     import re
@@ -712,3 +712,5 @@ if __name__ == '__main__':
         while len(otp_secret) == 0:
             otp_secret = input("Enter your OTP secret >\t")
         ita_bot.log_in_udel_account(udel_username, udel_password, otp_secret)
+
+    ita_bot.process_fields()
