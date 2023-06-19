@@ -11,7 +11,7 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 
 class SeleniumBotWebdriverType(Enum):
     """
-    Controls what type of driver we are setting out webdriver to
+    Controls what type of driver we are setting our webdriver to
     """
     BRAVE = 0
     CHROME = 1,
@@ -336,6 +336,7 @@ class SeleniumBot:
         """
         from selenium.webdriver.common.by import By
         from selenium.webdriver.remote.webdriver import WebElement
+        from pyotp import TOTP
         input_elements = self.driver.find_elements(by=By.TAG_NAME, value='input')
 
         if len(input_elements) == 0:
@@ -347,7 +348,7 @@ class SeleniumBot:
             raise Exception("Unable to find token input")
 
         found_token_input: WebElement = found_token_inputs[-1]
-        simulate_typing(found_token_input, otp_code)
+        simulate_typing(found_token_input, TOTP(otp_code).now())
         press_enter_key(found_token_input)
 
     def log_in_udel_account(self, username: str, password: str, otp_code) -> None:
@@ -639,7 +640,7 @@ class ITATrainingBot(GoogleFormBot):
         :return: The mutated class instance
         """
         if field_label in self.lookup:
-            self.fields[self.lookup[field_label]] = value
+            self.fields[self.lookup[field_label]][1] = value
         return self
 
     def process_fields(self) -> None:
