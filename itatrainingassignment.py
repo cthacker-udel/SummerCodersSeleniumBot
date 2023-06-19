@@ -48,8 +48,8 @@ def find_webdriver(headless: bool) -> Any:
     from selenium.webdriver.ie.service import Service as IEService
 
     def get_driver(service: Callable[[str], Optional[Union[
-        ChromeService, ChromiumService, EdgeService, FirefoxService, IEService]]],
-                   spec: SeleniumBotWebdriverType) -> WebDriver:
+            ChromeService, ChromiumService, EdgeService, FirefoxService, IEService]]],
+            spec: SeleniumBotWebdriverType) -> WebDriver:
         """
         Gets the  driver specified by the specification `spec` passed in. Fetches the driver using the helpful
         library `webdriver_manager`, which handles downloading the driver to be used, dependent on the specification
@@ -148,7 +148,7 @@ def press_enter_key(element: Any) -> None:
     :param element: The element to press the enter key in
     :return: None, mutates the element passed in
     """
-    from selenium.webdriver.remote.webdriver import WebElement
+    from selenium.webdriver.remote.webelement import WebElement
     from selenium.webdriver.common.keys import Keys
     converted_element: WebElement = element
     converted_element.send_keys(Keys.ENTER)
@@ -165,7 +165,7 @@ def simulate_typing(element: Any, content: str | int, random_interval_start=.15,
     :param random_interval_stop: The end of the random interval
     :return: None, mutates the element internally
     """
-    from selenium.webdriver.remote.webdriver import WebElement
+    from selenium.webdriver.remote.webelement import WebElement
     from time import sleep
     from random import uniform
 
@@ -175,6 +175,19 @@ def simulate_typing(element: Any, content: str | int, random_interval_start=.15,
     for each_letter in converted_content:
         converted_element.send_keys(each_letter)
         sleep(uniform(random_interval_start, random_interval_stop))
+
+
+def wait(minSeconds: float = 1, maxSeconds: float = 5) -> None:
+    """
+    Waits x amount of seconds between min and max
+
+    Args:
+        min (int): The minimum amount of time (default 1 second)
+        max (int): The maximum amount of time (default 5 seconds)
+    """
+    from random import uniform
+    from time import sleep
+    sleep(uniform(minSeconds, maxSeconds))
 
 
 class SeleniumBot:
@@ -212,6 +225,17 @@ class SeleniumBot:
             print(str(exception))
             return False
 
+    def update_base_url(self) -> None:
+        """
+        Updates the base url of the driver to it's current url
+        """
+        from urllib.parse import urlsplit
+        try:
+            wait()
+            self.base_url = urlsplit(self.driver.current_url)
+        except Exception as exception:
+            print(str(exception))
+
     def enter_email_google_account(self, email_or_phone: str) -> Any:
         """
         Finds the email input for the Google form, used when accessing any Google resource
@@ -220,8 +244,9 @@ class SeleniumBot:
         :return: The found email input
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
-        home_page_inputs = self.driver.find_elements(by=By.TAG_NAME, value='input')
+        from selenium.webdriver.remote.webelement import WebElement
+        home_page_inputs = self.driver.find_elements(
+            by=By.TAG_NAME, value='input')
 
         def is_email_input(web_element: WebElement):
             """
@@ -232,13 +257,16 @@ class SeleniumBot:
             """
             return web_element.get_attribute('type') == 'email'
 
-        email_or_phone_login: List[WebElement] = list(filter(is_email_input, home_page_inputs))
+        email_or_phone_login: List[WebElement] = list(
+            filter(is_email_input, home_page_inputs))
         if len(email_or_phone_login) == 0:
-            raise Exception("Failed to find email or phone login element for google form")
+            raise Exception(
+                "Failed to find email or phone login element for google form")
 
         email_element = email_or_phone_login[-1]
         simulate_typing(email_element, email_or_phone)
         press_enter_key(email_element)
+        self.update_base_url()
 
     def enter_password_google_account(self, password: str) -> None:
         """
@@ -248,9 +276,10 @@ class SeleniumBot:
         :return: None, enters/interacts with the browser internally
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
+        from selenium.webdriver.remote.webelement import WebElement
 
-        password_form_inputs = self.driver.find_elements(by=By.TAG_NAME, value='input')
+        password_form_inputs = self.driver.find_elements(
+            by=By.TAG_NAME, value='input')
 
         def is_password_input(web_element: WebElement):
             """
@@ -261,7 +290,8 @@ class SeleniumBot:
             """
             return web_element.get_attribute('type') == 'password'
 
-        password_inputs: List[WebElement] = list(filter(is_password_input, password_form_inputs))
+        password_inputs: List[WebElement] = list(
+            filter(is_password_input, password_form_inputs))
         if len(password_inputs) == 0:
             raise Exception("Failed to find password element for google form")
 
@@ -288,11 +318,13 @@ class SeleniumBot:
         :return: None, mutates the browser internally
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
-        input_elements = self.driver.find_elements(by=By.TAG_NAME, value='input')
+        from selenium.webdriver.remote.webelement import WebElement
+        input_elements = self.driver.find_elements(
+            by=By.TAG_NAME, value='input')
 
         if len(input_elements) == 0:
-            raise Exception("Unable to find any input elements in the udel credentials page, please try again")
+            raise Exception(
+                "Unable to find any input elements in the udel credentials page, please try again")
 
         found_username_inputs: List[WebElement] = list(
             filter(lambda x: x.get_attribute('id') == 'username', input_elements))
@@ -311,11 +343,13 @@ class SeleniumBot:
         :return: None, mutates the browser internally
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
-        input_elements = self.driver.find_elements(by=By.TAG_NAME, value='input')
+        from selenium.webdriver.remote.webelement import WebElement
+        input_elements = self.driver.find_elements(
+            by=By.TAG_NAME, value='input')
 
         if len(input_elements) == 0:
-            raise Exception("Unable to find any input elements in the udel credentials page, please try again")
+            raise Exception(
+                "Unable to find any input elements in the udel credentials page, please try again")
 
         found_password_inputs: List[WebElement] = list(
             filter(lambda x: x.get_attribute('id') == 'password', input_elements))
@@ -335,14 +369,17 @@ class SeleniumBot:
         :return: None, mutates the browser internally
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
+        from selenium.webdriver.remote.webelement import WebElement
         from pyotp import TOTP
-        input_elements = self.driver.find_elements(by=By.TAG_NAME, value='input')
+        input_elements = self.driver.find_elements(
+            by=By.TAG_NAME, value='input')
 
         if len(input_elements) == 0:
-            raise Exception("Unable to find any input elements in the 2FA page, please try again")
+            raise Exception(
+                "Unable to find any input elements in the 2FA page, please try again")
 
-        found_token_inputs: List[WebElement] = list(filter(lambda x: x.get_attribute('id') == 'token', input_elements))
+        found_token_inputs: List[WebElement] = list(
+            filter(lambda x: x.get_attribute('id') == 'token', input_elements))
 
         if len(found_token_inputs) == 0:
             raise Exception("Unable to find token input")
@@ -350,6 +387,30 @@ class SeleniumBot:
         found_token_input: WebElement = found_token_inputs[-1]
         simulate_typing(found_token_input, TOTP(otp_code).now())
         press_enter_key(found_token_input)
+
+    def verify_its_you(self) -> None:
+        """
+        Bypass the "Verify it's you" prompt (to avoid what we are exactly doing)
+        """
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.remote.webelement import WebElement
+
+        wait()
+        all_span_elements = self.driver.find_elements(
+            by=By.TAG_NAME, value='span')
+
+        if len(all_span_elements) == 0:
+            raise Exception(
+                "Unable to find any span elements in the \'Verify it's you page\'")
+
+        continue_spans = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
+            "innerHTML").replace('&nbsp;', '').strip().lower() == "continue", all_span_elements))
+
+        if len(continue_spans) > 0:
+            continue_span = continue_spans[-1]
+            second_parent = continue_span.find_element(
+                By.XPATH, value='../..')
+            second_parent.click()
 
     def log_in_udel_account(self, username: str, password: str, otp_code) -> None:
         """
@@ -363,6 +424,7 @@ class SeleniumBot:
         self.enter_username_udel_account(username)
         self.enter_password_udel_account(password)
         self.enter_otp_udel_account(otp_code)
+        self.verify_its_you()
 
 
 def select_random_multiselect_option(mutliselect_element: Any) -> None:
@@ -373,16 +435,20 @@ def select_random_multiselect_option(mutliselect_element: Any) -> None:
     :return: None, mutates the dom internally
     """
     from selenium.webdriver.common.by import By
-    from selenium.webdriver.remote.webdriver import WebElement
+    from selenium.webdriver.remote.webelement import WebElement
     from random import choice
     converted_multiselect: WebElement = mutliselect_element
-    all_divs: List[WebElement] = converted_multiselect.find_elements(by=By.TAG_NAME, value='div')
-    all_options: List[WebElement] = list(
-        filter(lambda x: x.get_attribute('role') == 'option' and x.get_attribute('data-value') is not None,
-               all_divs))
-    if len(all_options) > 0:
-        random_option: WebElement = choice(all_options)
-        random_option.click()
+    converted_multiselect.click()
+    wait(.25, .5)
+    found_presentations = list(filter(lambda x: x.get_attribute('role') is not None and x.get_attribute('ssk') is not None and x.get_attribute(
+        'role') == 'presentation', list(converted_multiselect.find_elements(By.TAG_NAME, value='div'))))
+    if len(found_presentations) > 0:
+        all_options: List[WebElement] = list(
+            filter(lambda x: x.get_attribute('role') == 'option' and x.get_attribute('data-value') is not None,
+                   found_presentations[-1].find_elements(By.TAG_NAME, 'div')))
+        if len(all_options) > 0:
+            random_option: WebElement = choice(all_options[1:])
+            random_option.click()
 
 
 def generate_random_string(length: int = 20) -> str:
@@ -418,17 +484,26 @@ class GoogleFormBot(SeleniumBot):
         :return: The found input element
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
+        from selenium.webdriver.remote.webelement import WebElement
         all_divs = self.driver.find_elements(by=By.TAG_NAME, value='span')
 
         found_elements = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
-            "innerHTML").strip().lower() == label.lower(), all_divs))
+            "innerHTML").replace('&nbsp;', '').strip().lower() == label.lower(), all_divs))
 
         if len(found_elements) > 0:
             found_element: WebElement = found_elements[-1]
-            fourth_parent = found_element.find_element('../../../../')
-            input_element = fourth_parent.find_element(By.TAG_NAME, value='input')
-            return input_element
+            fourth_parent = found_element.find_element(
+                By.XPATH, value='../../../..')
+            input_element = fourth_parent.find_elements(
+                By.TAG_NAME, value='input')
+            if len(input_element) > 0:
+                return input_element[-1]
+            fifth_parent = found_element.find_element(
+                By.XPATH, '../../../../..')
+            input_element = fifth_parent.find_elements(
+                By.TAG_NAME, value='input') or fifth_parent.find_elements(By.TAG_NAME, value='textarea')
+            if len(input_element) > 0:
+                return input_element[-1]
 
         return None
 
@@ -440,18 +515,21 @@ class GoogleFormBot(SeleniumBot):
         :return: The found input element
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
+        from selenium.webdriver.remote.webelement import WebElement
         all_divs = self.driver.find_elements(by=By.TAG_NAME, value='span')
 
         found_elements = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
-            "innerHTML").strip().lower() == label.lower(), all_divs))
+            "innerHTML").replace('&nbsp;', '').strip().lower() == label.lower(), all_divs))
 
         if len(found_elements) > 0:
             found_element: WebElement = found_elements[-1]
-            fourth_parent = found_element.find_element('../../../../')
-            all_divs_of_parent = fourth_parent.find_elements(By.TAG_NAME, value='div')
+            fourth_parent = found_element.find_element(
+                By.XPATH, value='../../../..')
+            all_divs_of_parent = fourth_parent.find_elements(
+                By.TAG_NAME, value='div')
             if len(all_divs_of_parent) > 0:
-                multiselect_elements = list(filter(lambda x: x.get_attribute('role') == 'listbox', all_divs_of_parent))
+                multiselect_elements = list(
+                    filter(lambda x: x.get_attribute('role') == 'listbox', all_divs_of_parent))
                 if len(multiselect_elements) > 0:
                     return multiselect_elements[-1]
         return None
@@ -475,30 +553,34 @@ class GoogleFormBot(SeleniumBot):
         :return: None, mutates the dom internally
         """
         found_input = self.get_input_by_label(label)
-        simulate_typing(found_input, generate_random_string() if content is None else content)
+        simulate_typing(found_input, generate_random_string()
+                        if content is None else content)
 
-    def check_singular_textbox(self, label: str, checked: bool = True) -> None:
+    def check_singular_checkbox(self, label: str, checked: bool = True) -> None:
         """
-        Checks a singular textbox in the Google form
+        Checks a singular checkbox in the Google form
 
         :param label: The label to access the checkbox from
         :param checked: Whether to check the checkbox
         :return: None, mutates the DOM internally
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
+        from selenium.webdriver.remote.webelement import WebElement
 
         all_spans = self.driver.find_elements(By.TAG_NAME, value='span')
 
         if len(all_spans) > 0:
             found_label_span = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
-                "innerHTML").strip().lower() == label.lower(), all_spans))
+                "innerHTML").replace('&nbsp;', '').strip().lower() == label.lower(), all_spans))
             if len(found_label_span) > 0:
                 found_label = found_label_span[-1]
-                third_parent: WebElement = found_label.find_element(By.XPATH, value='../../../')
-                parent_divs = third_parent.find_elements(By.TAG_NAME, value='div')
+                third_parent: WebElement = found_label.find_element(
+                    By.XPATH, value='../../..')
+                parent_divs = third_parent.find_elements(
+                    By.TAG_NAME, value='div')
                 if len(parent_divs) > 0:
-                    found_checkboxes = list(filter(lambda x: x.get_attribute("role") == "checkbox", parent_divs))
+                    found_checkboxes = list(
+                        filter(lambda x: x.get_attribute("role") == "checkbox", parent_divs))
                     if len(found_checkboxes) > 0:
                         found_checkbox: WebElement = found_checkboxes[-1]
                         if checked:
@@ -515,30 +597,33 @@ class GoogleFormBot(SeleniumBot):
         :return: None, mutates the DOM internally
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
+        from selenium.webdriver.remote.webelement import WebElement
 
-        all_spans: List[WebElement] = self.driver.find_elements(By.TAG_NAME, value='span')
+        all_spans: List[WebElement] = self.driver.find_elements(
+            By.TAG_NAME, value='span')
 
         if len(all_spans) > 0:
             found_label_spans = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
-                "innerHTML").strip().lower() == label.lower(), all_spans))
+                "innerHTML").replace('&nbsp;', '').strip().lower() == label.lower(), all_spans))
             if len(found_label_spans) > 0:
                 found_label_span: WebElement = found_label_spans[-1]
-                fourth_parent = found_label_span.find_element(By.XPATH, value='../../../../')
-                fourth_parent_inputs = fourth_parent.find_elements(By.TAG_NAME, value='input')
+                fourth_parent = found_label_span.find_element(
+                    By.XPATH, value='../../../..')
+                fourth_parent_inputs = fourth_parent.find_elements(
+                    By.TAG_NAME, value='input')
                 if len(fourth_parent_inputs) > 0:
                     found_month_inputs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
                         "aria-label") is not None and x.get_attribute(
-                        "role").strip().lower() == "combobox" and x.get_attribute(
-                        "aria-label").strip().lower() == "month", fourth_parent_inputs))
+                        "role").replace('&nbsp;', '').strip().lower() == "combobox" and x.get_attribute(
+                        "aria-label").replace('&nbsp;', '').strip().lower() == "month", fourth_parent_inputs))
                     found_day_inputs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
                         "aria-label") is not None and x.get_attribute(
-                        "role").strip().lower() == "combobox" and x.get_attribute(
-                        "aria-label").strip().lower() == "day of the month", fourth_parent_inputs))
+                        "role").replace('&nbsp;', '').strip().lower() == "combobox" and x.get_attribute(
+                        "aria-label").replace('&nbsp;', '').strip().lower() == "day of the month", fourth_parent_inputs))
                     found_year_inputs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
                         "aria-label") is not None and x.get_attribute(
-                        "role").strip().lower() == "combobox" and x.get_attribute(
-                        "aria-label").strip().lower() == "year", fourth_parent_inputs))
+                        "role").replace('&nbsp;', '').strip().lower() == "combobox" and x.get_attribute(
+                        "aria-label").replace('&nbsp;', '').strip().lower() == "year", fourth_parent_inputs))
                     if len(found_month_inputs) > 0 and len(found_day_inputs) > 0 and len(found_year_inputs) > 0:
                         found_month_input = found_month_inputs[-1]
                         found_day_input = found_day_inputs[-1]
@@ -546,6 +631,13 @@ class GoogleFormBot(SeleniumBot):
                         simulate_typing(found_month_input, month)
                         simulate_typing(found_day_input, day)
                         simulate_typing(found_year_input, year)
+                    else:
+                        found_date_inputs = list(filter(lambda x: x.get_attribute("type") is not None and x.get_attribute(
+                            "type").replace('&nbsp;', '').strip().lower() == "date", fourth_parent_inputs))
+                        if len(found_date_inputs) > 0:
+                            found_date_input = found_date_inputs[-1]
+                            self.driver.execute_script(
+                                f'arguments[0].value = \'{year}-{month}-{day}\'', found_date_input)
 
     def select_multiple_checkboxes(self, label: str, choose_amount: int = 1, other_text: Optional[str] = None) -> None:
         """
@@ -557,30 +649,36 @@ class GoogleFormBot(SeleniumBot):
         :return: None, mutates the DOM internally
         """
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.remote.webdriver import WebElement
+        from selenium.webdriver.remote.webelement import WebElement
         from random import choice
 
-        all_spans: List[WebElement] = self.driver.find_elements(By.TAG_NAME, value='span')
+        all_spans: List[WebElement] = self.driver.find_elements(
+            By.TAG_NAME, value='span')
 
         if len(all_spans) > 0:
             found_label_spans = list(filter(lambda x: x.get_attribute("innerHTML") is not None and x.get_attribute(
-                "innerHTML").strip().lower() == label.lower(), all_spans))
+                "innerHTML").replace('&nbsp;', '').strip().lower() == label.lower(), all_spans))
             if len(found_label_spans) > 0:
                 found_label: WebElement = found_label_spans[-1]
-                fourth_parent: WebElement = found_label.find_element(By.XPATH, "../../../../")
-                fourth_parent_divs = fourth_parent.find_elements(By.TAG_NAME, value='div')
+                fourth_parent: WebElement = found_label.find_element(
+                    By.XPATH, "../../../..")
+                fourth_parent_divs = fourth_parent.find_elements(
+                    By.TAG_NAME, value='div')
                 if len(fourth_parent_divs) > 0:
                     found_list_divs = list(filter(lambda x: x.get_attribute("role") is not None and x.get_attribute(
-                        "role").strip().lower() == "list", fourth_parent_divs))
+                        "role").replace('&nbsp;', '').strip().lower() == "list", fourth_parent_divs))
                     if len(found_list_divs) > 0:
                         found_list: WebElement = found_list_divs[-1]
-                        found_list_divs = found_list.find_elements(By.TAG_NAME, value='div')
+                        found_list_divs = found_list.find_elements(
+                            By.TAG_NAME, value='div')
                         if len(found_list_divs) > 0:
                             found_list_options: List[WebElement] = list(filter(
-                                lambda x: x.get_attribute("role") is not None and x.get_attribute("role") == "listitem",
+                                lambda x: x.get_attribute(
+                                    "role") is not None and x.get_attribute("role") == "listitem",
                                 found_list_divs))
                             for i in range(choose_amount):
-                                random_option: WebElement = choice(found_list_options)
+                                random_option: WebElement = choice(
+                                    found_list_options)
                                 random_option.click()
                                 # If we click on the other option.
                                 # It automatically focuses onto the text input to describe the other option
@@ -588,9 +686,11 @@ class GoogleFormBot(SeleniumBot):
                                 if focused_element.tag_name == 'input':
                                     if other_text is None:
                                         from string import ascii_lowercase
-                                        simulate_typing(focused_element, generate_random_string())
+                                        simulate_typing(
+                                            focused_element, generate_random_string())
                                     else:
-                                        simulate_typing(focused_element, other_text)
+                                        simulate_typing(
+                                            focused_element, other_text)
 
 
 class ITATrainingBot(GoogleFormBot):
@@ -611,21 +711,27 @@ class ITATrainingBot(GoogleFormBot):
             [GoogleFormBotFieldType.TEXT, "Z", "Middle Initial"],
             [GoogleFormBotFieldType.TEXT, 312931, "Student ID #"],
             [GoogleFormBotFieldType.MULTI_SELECT, None, "Country of Citizenship"],
-            [GoogleFormBotFieldType.MULTI_SELECT, None, "Term for ELI ITA Attendance"],
+            [GoogleFormBotFieldType.MULTI_SELECT,
+                None, "Term for ELI ITA Attendance"],
             [GoogleFormBotFieldType.MULTI_SELECT, None, "ELI ITA Session"],
             [GoogleFormBotFieldType.TEXT, 99, "IBT TOEFL Score (Speaking)"],
             [GoogleFormBotFieldType.TEXT, 99, "IBT TOEFL Score (Total)"],
-            [GoogleFormBotFieldType.DATE, [12, 20, 1990], "Begin Date of TA Contract"],
+            [GoogleFormBotFieldType.DATE, [12, 20, 1990],
+                "Begin Date of TA Contract"],
             [GoogleFormBotFieldType.DATE, [12, 20, 1991], "End Date of TA Contract"],
             [GoogleFormBotFieldType.TEXT, 20000, "Amount of Stipend"],
             [GoogleFormBotFieldType.TEXT, 100, "Percentage of Tuition"],
-            [GoogleFormBotFieldType.MULTI_CHECKBOX, None, "Name of Student's Program"],
-            [GoogleFormBotFieldType.TEXT, "Thacker Department", "Department Contact Name"],
-            [GoogleFormBotFieldType.TEXT, "20 Thacker Lane", "Department Contact Campus Address"],
-            [GoogleFormBotFieldType.TEXT, "123-401-9958", "Department Contact Person's Telephone Number"]
+            [GoogleFormBotFieldType.MULTI_CHECKBOX,
+                None, "Name of Student's Program"],
+            [GoogleFormBotFieldType.TEXT, "Thacker Department",
+                "Department Contact Name"],
+            [GoogleFormBotFieldType.TEXT, "20 Thacker Lane",
+                "Department Contact Campus Address"],
+            [GoogleFormBotFieldType.TEXT, "123-401-9958",
+                "Department Contact Person's Telephone Number"]
         ]
 
-        ## lookup table of labels, to indexes within the fields, if the user wants to mutate any of the values
+        # lookup table of labels, to indexes within the fields, if the user wants to mutate any of the values
         self.lookup: dict[str, int] = {}
 
         for ind, element in enumerate(self.fields):
@@ -650,6 +756,7 @@ class ITATrainingBot(GoogleFormBot):
         :return: None, processes the fields array internally
         """
         for each_field in self.fields:
+            wait(1, 1.5)
             [field_type, value, label] = each_field
             if field_type == GoogleFormBotFieldType.TEXT:
                 self.enter_text_in_text_input(label, value)
@@ -658,7 +765,7 @@ class ITATrainingBot(GoogleFormBot):
             elif field_type == GoogleFormBotFieldType.MULTI_SELECT:
                 self.select_multiselect_option(label)
             elif field_type == GoogleFormBotFieldType.SINGLE_CHECKBOX:
-                self.check_singular_textbox(label, value)
+                self.check_singular_checkbox(label, value)
             elif field_type == GoogleFormBotFieldType.DATE:
                 [month, day, year] = value
                 self.enter_date(label, month, day, year)
@@ -693,7 +800,7 @@ if __name__ == '__main__':
     ita_bot.enter_email_google_account(google_email)
     if ita_bot.base_url.netloc == 'accounts.google.com':
         #########################
-        ## GOOGLE AUTHENTICATION
+        # GOOGLE AUTHENTICATION
         #########################
         google_password = ''
         while len(google_password) == 0:
@@ -701,7 +808,7 @@ if __name__ == '__main__':
         ita_bot.log_in_google_account(google_email, google_password)
     elif ita_bot.base_url.netloc == 'cas.nss.udel.edu':
         ########################
-        ## UDEL AUTHENTICATION
+        # UDEL AUTHENTICATION
         ########################
         udel_username = ''
         while len(udel_username) == 0:
